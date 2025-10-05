@@ -23,18 +23,16 @@ nS = len(S)
 
 state, info = env.reset()
 
-def plot_graph(time_steps, returns):
-    plt.plot(time_steps, returns)
-    plt.show()
-
-
-def MC_control(b_0=None, gamma=0.95, epsilon_s=0.3, max_iter=200, episodes=10000, eps_decay=0.99):
+def MC_control(b_0=None, gamma=0.95, epsilon_s=0.3, max_iter=200, episodes=1000, eps_decay=0.99):
     Q = np.random.rand(nS, nA)
     s_a_count = np.zeros((nS, nA))
+
+    # for plotting
     returns = []
     times = []
     mean_returns = []
     time_steps = 0
+    
     epsilon = epsilon_s
 
     for ep in range(episodes):
@@ -52,6 +50,7 @@ def MC_control(b_0=None, gamma=0.95, epsilon_s=0.3, max_iter=200, episodes=10000
                 a = np.random.randint(nA)
             else:
                 a = np.argmax(Q[s])
+            epsilon = epsilon * 0.9
 
             states.append(s)
             actions.append(a)
@@ -74,7 +73,7 @@ def MC_control(b_0=None, gamma=0.95, epsilon_s=0.3, max_iter=200, episodes=10000
             if sa not in visited:
                 visited.add(sa)
                 s_a_count[sa] += 1.0
-                alpha = 0.2 #1.0 / s_a_count[sa]
+                alpha = 0.2 
                 Q[sa] += alpha * (G - Q[sa])
         time_steps += len(states)
         times.append(time_steps)
@@ -89,11 +88,15 @@ def MC_control(b_0=None, gamma=0.95, epsilon_s=0.3, max_iter=200, episodes=10000
     return Q, pi, mean_returns, times
 
 
-def SARSA(b_0, gamma=0.95, alpha=0.2, epsilon_s=0.1, max_iter=10000):
+def SARSA(b_0, gamma=0.95, alpha=0.2, epsilon_s=0.1, max_iter=200):
     Q = np.random.rand(nS, nA)
     epsilon = epsilon_s
+    returns = []
+    times = []
+    mean_returns = []
+    time_steps = 0
 
-    for i in range(500):
+    for i in range(1000):
         # print("episode:",i)
         states = []
         actions = []
@@ -110,6 +113,8 @@ def SARSA(b_0, gamma=0.95, alpha=0.2, epsilon_s=0.1, max_iter=10000):
         epsilon = epsilon * 0.9
 
         for t in range(max_iter):
+
+            time_steps += 1
 
             states.append(s)
             actions.append(a)
@@ -136,16 +141,27 @@ def SARSA(b_0, gamma=0.95, alpha=0.2, epsilon_s=0.1, max_iter=10000):
             s = s_prime
             a = a_prime
 
+        G = 0.0
+        for r in reversed(rewards):
+            G = r + gamma * G
+        returns.append(G)
+        mean_returns.append(np.mean(returns))
+        times.append(time_steps)
+
         pi = np.argmax(Q, axis=1)
-    return Q, pi
+    return Q, pi, mean_returns, times
 
 
-def Q_learning(b_0, gamma=0.95, alpha=0.2, epsilon_s=0.1, max_iter=10000):
+def Q_learning(b_0, gamma=0.95, alpha=0.2, epsilon_s=0.1, max_iter=200):
     Q = np.random.rand(nS, nA)
     epsilon = epsilon_s
+    returns = []
+    times = []
+    mean_returns = []
+    time_steps = 0
 
-    for i in range(500):
-        # print("episode:",i)
+    for i in range(1000):
+        print("episode:",i)
         states = []
         actions = []
         rewards = []
@@ -162,6 +178,8 @@ def Q_learning(b_0, gamma=0.95, alpha=0.2, epsilon_s=0.1, max_iter=10000):
 
         for t in range(max_iter):
 
+            time_steps += 1
+
             states.append(s)
             actions.append(a)
 
@@ -176,31 +194,83 @@ def Q_learning(b_0, gamma=0.95, alpha=0.2, epsilon_s=0.1, max_iter=10000):
                 a_prime = np.argmax(Q[s_prime])
             epsilon = epsilon * 0.9
 
+            sa_p = (s_prime, a_prime)
+
             if done:
                 Q[sa] += alpha*(rewards[t] - Q[sa])
                 break
             
-            Q[sa] += alpha*(rewards[t]+gamma*np.argmax(Q[s_prime]) - Q[sa])
+            Q[sa] += alpha*(rewards[t]+gamma*np.max(Q[s_prime]) - Q[sa])
 
             s = s_prime
             a = a_prime
 
+        G = 0.0
+        for r in reversed(rewards):
+            G = r + gamma * G
+        returns.append(G)
+        mean_returns.append(np.mean(returns))
+        times.append(time_steps)
+
         pi = np.argmax(Q, axis=1)
-    return Q, pi
+    return Q, pi, mean_returns, times
+
 
 print("Running MC...")
-Q_MC, pi_MC, r, t  = MC_control(0)
+Q_MC, pi_MC, r_MC, t_MC  = MC_control(0)
 print(Q_MC)
-plot_graph(t, r)
 print("MC Policy:", pi_MC,"\n")
-# print("Running SARSA...")
-# Q_SARSA, pi_SARSA = SARSA(0)
-# print("SARSA Policy:", pi_SARSA,"\n")
-# print("Running Q...")
-# Q_Q, pi_Q = Q_learning(0)
-# print("Q Policy:", pi_Q,"\n")
 
-# print("Optimal Action Value Function:\n", Q, "\n\n")
+print("Running SARSA...")
+Q_SARSA, pi_SARSA, r_SARSA, t_SARSA = SARSA(0)
+print(Q_SARSA)
+print("SARSA Policy:", pi_SARSA,"\n")
 
+print("Running Q...")
+Q_Q, pi_Q, r_Q, t_Q = Q_learning(0)
+print(Q_Q)
+print("Q Policy:", pi_Q,"\n")
 
+# --- plotting ---
+plt.figure(figsize=(7,4))
+plt.plot(t_MC, r_MC, label='MC Control')
+plt.plot(t_SARSA, r_SARSA, label='SARSA')
+plt.plot(t_Q, r_Q, label='Q-Learning')
 
+plt.title(f'FrozenLake 4x4 (slippery={slippery}): Learning Curves')
+plt.xlabel('Time steps')
+plt.ylabel('Mean return (running average)')
+plt.legend(loc='best', frameon=True)
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.show()
+
+slippery = True
+print("Running MC...")
+Q_MC, pi_MC, r_MC, t_MC  = MC_control(0)
+print(Q_MC)
+print("MC Policy:", pi_MC,"\n")
+
+print("Running SARSA...")
+Q_SARSA, pi_SARSA, r_SARSA, t_SARSA = SARSA(0)
+print(Q_SARSA)
+print("SARSA Policy:", pi_SARSA,"\n")
+
+print("Running Q...")
+Q_Q, pi_Q, r_Q, t_Q = Q_learning(0)
+print(Q_Q)
+print("Q Policy:", pi_Q,"\n")
+
+# --- plotting ---
+plt.figure(figsize=(7,4))
+plt.plot(t_MC, r_MC, label='MC Control')
+plt.plot(t_SARSA, r_SARSA, label='SARSA')
+plt.plot(t_Q, r_Q, label='Q-Learning')
+
+plt.title(f'FrozenLake 4x4 (slippery={slippery}): Learning Curves')
+plt.xlabel('Time steps')
+plt.ylabel('Mean return (running average)')
+plt.legend(loc='best', frameon=True)
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.show()
