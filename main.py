@@ -23,21 +23,20 @@ nS = len(S)
 
 state, info = env.reset()
 
-def MC_control(b_0=None, gamma=0.95, epsilon_s=0.3, max_iter=200, episodes=1000, eps_decay=0.99):
+def MC_control(b_0=None, gamma=0.95, epsilon_s=0.3, max_iter=500, episodes=1000, eps_decay=0.99):
     Q = np.random.rand(nS, nA)
     s_a_count = np.zeros((nS, nA))
 
-    # for plotting
+    #
     returns = []
     times = []
     mean_returns = []
     time_steps = 0
-    
     epsilon = epsilon_s
 
     for ep in range(episodes):
         s, _ = env.reset()
-        print(time_steps)
+        # print(time_steps)
         if b_0 is not None:
             env.unwrapped.s = int(b_0)
             s = int(b_0)
@@ -50,7 +49,6 @@ def MC_control(b_0=None, gamma=0.95, epsilon_s=0.3, max_iter=200, episodes=1000,
                 a = np.random.randint(nA)
             else:
                 a = np.argmax(Q[s])
-            epsilon = epsilon * 0.9
 
             states.append(s)
             actions.append(a)
@@ -88,7 +86,7 @@ def MC_control(b_0=None, gamma=0.95, epsilon_s=0.3, max_iter=200, episodes=1000,
     return Q, pi, mean_returns, times
 
 
-def SARSA(b_0, gamma=0.95, alpha=0.2, epsilon_s=0.1, max_iter=200):
+def SARSA(b_0, gamma=0.95, alpha=0.2, epsilon_s=0.3, max_iter=500):
     Q = np.random.rand(nS, nA)
     epsilon = epsilon_s
     returns = []
@@ -152,7 +150,7 @@ def SARSA(b_0, gamma=0.95, alpha=0.2, epsilon_s=0.1, max_iter=200):
     return Q, pi, mean_returns, times
 
 
-def Q_learning(b_0, gamma=0.95, alpha=0.2, epsilon_s=0.1, max_iter=200):
+def Q_learning(b_0, gamma=0.95, alpha=0.2, epsilon_s=0.3, max_iter=500):
     Q = np.random.rand(nS, nA)
     epsilon = epsilon_s
     returns = []
@@ -161,7 +159,7 @@ def Q_learning(b_0, gamma=0.95, alpha=0.2, epsilon_s=0.1, max_iter=200):
     time_steps = 0
 
     for i in range(1000):
-        print("episode:",i)
+        # print("episode:",i)
         states = []
         actions = []
         rewards = []
@@ -215,20 +213,20 @@ def Q_learning(b_0, gamma=0.95, alpha=0.2, epsilon_s=0.1, max_iter=200):
         pi = np.argmax(Q, axis=1)
     return Q, pi, mean_returns, times
 
-
+print(f"### FOR SLIPPERY: {slippery}")
 print("Running MC...")
 Q_MC, pi_MC, r_MC, t_MC  = MC_control(0)
-print(Q_MC)
+# print(Q_MC)
 print("MC Policy:", pi_MC,"\n")
 
 print("Running SARSA...")
 Q_SARSA, pi_SARSA, r_SARSA, t_SARSA = SARSA(0)
-print(Q_SARSA)
+# print(Q_SARSA)
 print("SARSA Policy:", pi_SARSA,"\n")
 
 print("Running Q...")
 Q_Q, pi_Q, r_Q, t_Q = Q_learning(0)
-print(Q_Q)
+# print(Q_Q)
 print("Q Policy:", pi_Q,"\n")
 
 # --- plotting ---
@@ -246,19 +244,20 @@ plt.tight_layout()
 plt.show()
 
 slippery = True
+print(f"### FOR SLIPPERY: {slippery}")
 print("Running MC...")
 Q_MC, pi_MC, r_MC, t_MC  = MC_control(0)
-print(Q_MC)
+# print(Q_MC)
 print("MC Policy:", pi_MC,"\n")
 
 print("Running SARSA...")
 Q_SARSA, pi_SARSA, r_SARSA, t_SARSA = SARSA(0)
-print(Q_SARSA)
+# print(Q_SARSA)
 print("SARSA Policy:", pi_SARSA,"\n")
 
 print("Running Q...")
 Q_Q, pi_Q, r_Q, t_Q = Q_learning(0)
-print(Q_Q)
+# print(Q_Q)
 print("Q Policy:", pi_Q,"\n")
 
 # --- plotting ---
